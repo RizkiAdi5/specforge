@@ -1,0 +1,367 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Org / auth
+// ---------------------------------------------------------------------------
+
+enum OrgPlan {
+  FREE
+  PRO
+}
+
+enum MembershipRole {
+  OWNER
+  MEMBER
+}
+
+model Org {
+  id                String   @id @default(cuid())
+  name              String
+  plan              OrgPlan  @default(FREE)
+  creditBalance     Int      @default(0)
+  projectSlotMax    Int      @default(1)
+  monthlyCostCapUsd Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt         DateTime @default(now())
+
+  memberships  Membership[]
+  projects     Project[]
+  providerKeys ProviderKey[]
+  usageLogs    UsageLog[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  memberships Membership[]
+}
+
+model Membership {
+  id        String         @id @default(cuid())
+  orgId     String
+  userId    String
+  role      MembershipRole @default(OWNER)
+  createdAt DateTime       @default(now())
+
+  org  Org  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+}
+
+model ProviderKey {
+  id           String   @id @default(cuid())
+  orgId        String
+  provider     String // "deepseek"
+  encryptedKey String
+  lastFour     String
+  isValid      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, provider])
+}
+
+// ---------------------------------------------------------------------------
+// Project
+// ---------------------------------------------------------------------------
+
+enum ProjectArchetype {
+  SAAS_CRUD
+}
+
+enum SpecLevel {
+  LITE
+  STANDARD
+  STRICT
+}
+
+enum ProjectStatus {
+  INTERVIEWING
+  COMPILING
+  ACTIVE
+  ARCHIVED
+}
+
+model Project {
+  id          String           @id @default(cuid())
+  orgId       String
+  archetype   ProjectArchetype
+  specLevel   SpecLevel        @default(STANDARD)
+  status      ProjectStatus    @default(INTERVIEWING)
+  blueprintId String?
+  refCounters Json             @default("{}")
+  createdAt   DateTime         @default(now())
+
+  org            Org             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  brief          Brief?
+  entities       Entity[]
+  stories        Story[]
+  decisions      Decision[]
+  assumptions    Assumption[]
+  tasks          Task[]
+  traceLinks     TraceLink[]
+  changeRequests ChangeRequest[]
+  codeStates     CodeState[]
+}
+
+model Brief {
+  id         String    @id @default(cuid())
+  projectId  String    @unique
+  rawAnswers Json
+  problem    String?
+  targetUser String?
+  scope      Json      @default("[]")
+  nonGoals   Json      @default("[]")
+  approvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Spec artifacts — no direct FK between artifact types, see TraceLink.
+// ---------------------------------------------------------------------------
+
+model Entity {
+  id        String   @id @default(cuid())
+  projectId String
+  refId     String // "E-003"
+  name      String
+  fields    Json     @default("[]")
+  relations Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, refId])
+}
+
+model Story {
+  id                 String   @id @default(cuid())
+  projectId          String
+  refId              String // "US-012"
+  narrative          String
+  acceptanceCriteria Json     @default("[]")
+  entityRefs         Json     @default("[]")
+  createdAt          DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, refId])
+}
+
+model Decision {
+  id           String   @id @default(cuid())
+  projectId    String
+  refId        String // "ADR-004"
+  choice       String
+  alternatives Json     @default("[]")
+  rationale    String
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, refId])
+}
+
+enum AssumptionStatus {
+  OPEN
+  CONFIRMED
+  REJECTED
+}
+
+model Assumption {
+  id        String           @id @default(cuid())
+  projectId String
+  refId     String // "AS-007"
+  statement String
+  question  String
+  answer    String?
+  status    AssumptionStatus @default(OPEN)
+  createdAt DateTime         @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, refId])
+}
+
+enum TaskLevel {
+  MILESTONE
+  TASK
+  STEP
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  INVALIDATED
+}
+
+model Task {
+  id               String     @id @default(cuid())
+  projectId        String
+  refId            String // "T-012", steps inherit as "S-012-1"
+  parentId         String?
+  level            TaskLevel
+  title            String
+  definitionOfDone Json       @default("[]")
+  allowedFiles     Json       @default("[]")
+  forbiddenFiles   Json       @default("[]")
+  dependsOn        Json       @default("[]") // refId[] of other tasks
+  storyRefs        Json       @default("[]")
+  status           TaskStatus @default(TODO)
+  createdAt        DateTime   @default(now())
+
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent        Task?          @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children      Task[]         @relation("TaskHierarchy")
+  promptPackets PromptPacket[]
+
+  @@unique([projectId, refId])
+}
+
+// ---------------------------------------------------------------------------
+// TraceLink — the only place cross-artifact relationships live.
+// from/to are polymorphic (refId + type), intentionally not real FKs.
+// ---------------------------------------------------------------------------
+
+enum ArtifactType {
+  ENTITY
+  STORY
+  DECISION
+  ASSUMPTION
+  TASK
+}
+
+enum TraceLinkKind {
+  DERIVES
+  IMPLEMENTS
+  CONSTRAINS
+  ASSUMES
+}
+
+model TraceLink {
+  id        String        @id @default(cuid())
+  projectId String
+  fromType  ArtifactType
+  fromRefId String
+  toType    ArtifactType
+  toRefId   String
+  kind      TraceLinkKind
+  createdAt DateTime      @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, fromType, fromRefId, toType, toRefId, kind])
+}
+
+model PromptPacket {
+  id           String   @id @default(cuid())
+  taskId       String
+  body         String
+  specSnapshot Json     @default("[]") // refId[] used to build this packet
+  isStale      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Loop
+// ---------------------------------------------------------------------------
+
+enum CodeStateSource {
+  FILE_TREE
+  FILE_CONTENT
+  ERROR_MESSAGE
+}
+
+model CodeState {
+  id         String          @id @default(cuid())
+  projectId  String
+  source     CodeStateSource
+  fileTree   Json            @default("[]")
+  deviations Json            @default("[]")
+  createdAt  DateTime        @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum ChangeRequestStatus {
+  ANALYZING
+  AWAITING_APPROVAL
+  APPLIED
+  DISCARDED
+}
+
+model ChangeRequest {
+  id          String              @id @default(cuid())
+  projectId   String
+  description String
+  impactSet   Json                @default("[]")
+  status      ChangeRequestStatus @default(ANALYZING)
+  createdAt   DateTime            @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Credit / usage
+// ---------------------------------------------------------------------------
+
+enum ActionType {
+  INTERVIEW
+  COMPILE_SPEC
+  COMPILE_DOMAIN
+  COMPILE_STORIES
+  COMPILE_DECISIONS
+  CRITIC_PASS
+  GENERATE_TASKS
+  SPLIT_TASK
+  PROMPT_PACKET
+  PASTE_BACK
+  REFINE_SECTION
+  CHANGE_REQUEST
+}
+
+model UsageLog {
+  id         String     @id @default(cuid())
+  orgId      String
+  projectId  String?
+  actionType ActionType
+  model      String
+  tokenIn    Int        @default(0)
+  tokenOut   Int        @default(0)
+  costUsd    Decimal    @default(0) @db.Decimal(10, 4)
+  creditCost Int        @default(0)
+  succeeded  Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+enum ModelAlias {
+  FLASH
+  FLASH_THINKING
+}
+
+model CreditRule {
+  actionType ActionType @id
+  creditCost Int
+  model      ModelAlias @default(FLASH)
+}

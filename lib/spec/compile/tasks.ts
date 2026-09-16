@@ -136,7 +136,7 @@ Balas HANYA JSON dengan bentuk persis:
           "localId": string (unik GLOBAL di seluruh output, contoh "m1-t1"),
           "title": string,
           "definitionOfDone": string[] (minimal 2, tiap butir harus bisa diverifikasi objektif),
-          "allowedFiles": string[] (glob path yang boleh disentuh task ini, contoh "app/api/invoices/**"),
+          "allowedFiles": string[] (glob path yang boleh disentuh task ini, HARUS mengikuti konvensi direktori stack yang dipilih di keputusan arsitektur — contoh untuk Next.js: "app/api/invoices/**", untuk Laravel: "app/Http/Controllers/InvoiceController.php", "routes/api.php", untuk Rails: "app/controllers/invoices_controller.rb"),
           "forbiddenFiles": string[] (glob path yang TIDAK boleh disentuh task ini),
           "dependsOn": string[] (localId task LAIN yang harus selesai duluan, boleh kosong),
           "storyRefs": string[] (refId story yang diimplementasi task ini, HARUS persis dari daftar story yang diberikan)

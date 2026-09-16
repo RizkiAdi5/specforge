@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Summary {
   entities: number;
@@ -92,8 +93,14 @@ export default function ChangesPage() {
           onChange={(e) => setDescription(e.target.value)}
         />
         <Button disabled={analyzing || !description.trim()} onClick={analyze}>
+          {analyzing && <Spinner className="mr-1.5" />}
           {analyzing ? "Menganalisis…" : "Analisis dampak"}
         </Button>
+        {analyzing && (
+          <p className="text-xs text-zinc-500">
+            Ini pakai reasoning model, bisa sampai satu menit — jangan tutup tab.
+          </p>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
@@ -110,6 +117,7 @@ export default function ChangesPage() {
           )}
           <div className="flex gap-2">
             <Button size="sm" disabled={acting} onClick={apply}>
+              {acting && <Spinner className="mr-1.5" />}
               Setujui
             </Button>
             <Button size="sm" variant="outline" disabled={acting} onClick={discard}>

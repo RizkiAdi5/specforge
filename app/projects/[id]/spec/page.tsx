@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Entity {
   id: string;
@@ -64,12 +65,14 @@ function RefineBox({ projectId, refId, onDone }: { projectId: string; refId: str
             onDone();
           }}
         >
+          {loading && <Spinner className="mr-1.5" />}
           {loading ? "Memproses…" : "Jalankan refine"}
         </Button>
         <Button size="xs" variant="outline" onClick={() => setOpen(false)}>
           Batal
         </Button>
       </div>
+      {loading && <p className="text-xs text-zinc-500">Biasanya beberapa detik, jangan tutup tab.</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

@@ -29,6 +29,14 @@ export const compileSpecJob = inngest.createFunction(
       scope: project.brief!.scope,
       nonGoals: project.brief!.nonGoals,
     };
+    const rawAnswers = project.brief!.rawAnswers as Record<string, unknown>;
+    const asString = (v: unknown) => (typeof v === "string" ? v : undefined);
+    const stackConstraints = {
+      framework: asString(rawAnswers.framework),
+      database: asString(rawAnswers.database),
+      hosting: asString(rawAnswers.hosting),
+    };
+    const designStyle = asString(rawAnswers.designStyle);
 
     const rule = await step.run("load-credit-rule", () =>
       prisma.creditRule.findUniqueOrThrow({ where: { actionType: "COMPILE_SPEC" } })
@@ -118,7 +126,7 @@ export const compileSpecJob = inngest.createFunction(
       currentStage = "decisions";
       await announce("decisions", "running");
       const decisions = await step.run("compile-decisions", () =>
-        compileDecisions({ orgId: project.orgId, projectId, brief })
+        compileDecisions({ orgId: project.orgId, projectId, brief, stackConstraints, designStyle })
       );
       await announce("decisions", "done");
 

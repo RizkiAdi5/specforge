@@ -31,4 +31,28 @@ export const BLUEPRINT_CATALOG: Blueprint[] = [
     whenToUse:
       "Cocok kalau tim lebih suka model data-loading Remix (loader/action per route) dibanding App Router Server Components.",
   },
+  {
+    id: "laravel-livewire-mysql",
+    name: "Laravel + Livewire + MySQL",
+    summary: "Laravel + Livewire + MySQL + Blade + Tailwind, server-rendered PHP full-stack",
+    stack: ["Laravel", "PHP", "Livewire", "Blade", "Eloquent ORM", "MySQL", "Tailwind CSS"],
+    whenToUse:
+      "Cocok buat yang lebih nyaman di ekosistem PHP, atau mau UI interaktif tanpa nulis API terpisah — Livewire menangani state di server, minim JavaScript custom.",
+  },
+  {
+    id: "rails-postgres",
+    name: "Ruby on Rails + PostgreSQL",
+    summary: "Ruby on Rails + PostgreSQL + Hotwire (Turbo + Stimulus) + Tailwind",
+    stack: ["Ruby on Rails", "Ruby", "Active Record", "PostgreSQL", "Hotwire (Turbo + Stimulus)", "Tailwind CSS"],
+    whenToUse:
+      "Rails dirancang khusus buat CRUD cepat (scaffolding, convention over configuration) — cocok kalau prioritasnya kecepatan development dibanding kontrol granular.",
+  },
+  {
+    id: "django-postgres",
+    name: "Django + PostgreSQL",
+    summary: "Django + PostgreSQL + Django ORM + Django Admin + Tailwind (django-tailwind)",
+    stack: ["Django", "Python", "Django ORM", "PostgreSQL", "Django Admin", "Tailwind CSS"],
+    whenToUse:
+      "Cocok kalau tim lebih nyaman Python, atau butuh admin panel CRUD siap pakai dari awal (Django Admin) tanpa harus membangunnya sendiri.",
+  },
 ];

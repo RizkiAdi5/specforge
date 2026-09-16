@@ -121,8 +121,11 @@ function renderTasks(tasks: TaskRow[]): string {
   return lines.join("\n");
 }
 
-function renderClaudeMd(opts: { blueprintId: string | null; nonGoals: string[] }): string {
+function renderClaudeMd(opts: { blueprintId: string | null; stackChoiceText: string | null; nonGoals: string[] }): string {
   const blueprint = BLUEPRINT_CATALOG.find((b) => b.id === opts.blueprintId);
+  const stackLines = blueprint
+    ? blueprint.stack.map((s) => `- ${s}`)
+    : [opts.stackChoiceText ?? "(belum ditentukan)"];
   const lines: string[] = [
     "# Aturan kerja",
     "",
@@ -130,7 +133,7 @@ function renderClaudeMd(opts: { blueprintId: string | null; nonGoals: string[] }
     "",
     "## Stack",
     "",
-    ...(blueprint ? blueprint.stack.map((s) => `- ${s}`) : ["(blueprint belum ditentukan)"]),
+    ...stackLines,
     "",
     "## Non-goals — jangan bangun ini",
     "",
@@ -155,7 +158,11 @@ export async function buildExportZip(projectId: string): Promise<Buffer> {
   zip.file(".spec/04-tasks.md", renderTasks(tasks as unknown as TaskRow[]));
   zip.file(
     "CLAUDE.md",
-    renderClaudeMd({ blueprintId: project.blueprintId, nonGoals: (project.brief?.nonGoals as string[]) ?? [] })
+    renderClaudeMd({
+      blueprintId: project.blueprintId,
+      stackChoiceText: decisions.find((d) => d.refId === "ADR-001")?.choice ?? null,
+      nonGoals: (project.brief?.nonGoals as string[]) ?? [],
+    })
   );
 
   return zip.generateAsync({ type: "nodebuffer" });

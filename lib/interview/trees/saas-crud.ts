@@ -1,4 +1,5 @@
 import type { InterviewQuestion } from "../types";
+import { DESIGN_STYLE_CATALOG } from "../../design/catalog";
 
 export const saasCrudTree: InterviewQuestion[] = [
   { slot: "appName", prompt: "Nama produk atau working title-nya apa?", type: "text", required: true },
@@ -51,5 +52,45 @@ export const saasCrudTree: InterviewQuestion[] = [
     prompt: "Ada fitur yang SENGAJA tidak mau dibangun dulu?",
     type: "text",
     required: false,
+  },
+  {
+    slot: "framework",
+    prompt: "Mau pakai framework/bahasa apa?",
+    type: "single-select",
+    options: [
+      "Next.js (TypeScript)",
+      "Remix (TypeScript)",
+      "SvelteKit (TypeScript)",
+      "Laravel (PHP)",
+      "Ruby on Rails",
+      "Django (Python)",
+      "Belum tahu, silakan pilihkan",
+    ],
+    allowOther: true,
+    required: true,
+  },
+  {
+    slot: "database",
+    prompt: "Mau pakai database apa?",
+    type: "single-select",
+    options: ["PostgreSQL", "MySQL", "SQLite", "MongoDB", "Belum tahu, silakan pilihkan"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    slot: "hosting",
+    prompt: "Mau di-deploy ke mana?",
+    type: "single-select",
+    options: ["Vercel", "Railway", "Fly.io", "VPS sendiri", "Belum tahu, silakan pilihkan"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    slot: "designStyle",
+    prompt: "Gaya visual yang diinginkan gimana?",
+    type: "single-select",
+    options: [...DESIGN_STYLE_CATALOG.map((d) => d.name), "Belum tahu, silakan pilihkan"],
+    allowOther: true,
+    required: true,
   },
 ];

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type Source = "FILE_TREE" | "FILE_CONTENT" | "ERROR_MESSAGE";
 
@@ -80,8 +81,10 @@ export function PasteBack({ projectId }: { projectId: string }) {
         onChange={(e) => setContent(e.target.value)}
       />
       <Button size="sm" disabled={checking || !content.trim()} onClick={check}>
+        {checking && <Spinner className="mr-1.5" />}
         {checking ? "Mengecek…" : "Check"}
       </Button>
+      {checking && <p className="text-xs text-zinc-500">Biasanya beberapa detik, jangan tutup tab.</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {deviations && (

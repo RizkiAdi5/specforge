@@ -3,12 +3,14 @@
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type InterviewQuestionDTO = {
   slot: string;
   prompt: string;
   type: "text" | "boolean" | "single-select";
   options?: string[];
+  allowOther?: boolean;
   required: boolean;
 };
 
@@ -34,6 +36,8 @@ function NewProjectInterview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [compileQueued, setCompileQueued] = useState(false);
+  const [compiling, setCompiling] = useState(false);
+  const [otherMode, setOtherMode] = useState(false);
 
   const loadNext = useCallback(async () => {
     if (!projectId) return;
@@ -41,6 +45,7 @@ function NewProjectInterview() {
     const data = await res.json();
     setState(data);
     setTextValue("");
+    setOtherMode(false);
   }, [projectId]);
 
   useEffect(() => {
@@ -82,6 +87,7 @@ function NewProjectInterview() {
     }
     setState(await res.json());
     setTextValue("");
+    setOtherMode(false);
   }
 
   if (!projectId) {
@@ -89,6 +95,7 @@ function NewProjectInterview() {
       <div className="p-8 max-w-md space-y-4">
         <h1 className="text-xl font-semibold">Pilih arketipe</h1>
         <Button disabled={loading} onClick={() => createProject("SAAS_CRUD")}>
+          {loading && <Spinner className="mr-1.5" />}
           SaaS CRUD
         </Button>
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -106,12 +113,12 @@ function NewProjectInterview() {
         <h1 className="text-xl font-semibold">Wawancara selesai</h1>
         <p className="text-sm text-zinc-500">{state.answeredCount} pertanyaan terjawab.</p>
         <Button
-          disabled={loading || compileQueued}
+          disabled={compiling || compileQueued}
           onClick={async () => {
-            setLoading(true);
+            setCompiling(true);
             setError(null);
             const res = await fetch(`/api/projects/${projectId}/brief/compile`, { method: "POST" });
-            setLoading(false);
+            setCompiling(false);
             if (!res.ok) {
               const body = await res.json();
               setError(typeof body.error === "string" ? body.error : "Gagal memulai compile brief");
@@ -121,8 +128,10 @@ function NewProjectInterview() {
             router.push(`/projects/${projectId}/brief`);
           }}
         >
-          {compileQueued ? "Brief sedang diproses…" : "Compile brief"}
+          {compiling && <Spinner className="mr-1.5" />}
+          {compileQueued ? "Brief sedang diproses…" : compiling ? "Memulai…" : "Compile brief"}
         </Button>
+        {compiling && <p className="text-xs text-zinc-500">Biasanya 10–20 detik, jangan tutup tab.</p>}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
     );
@@ -155,6 +164,7 @@ function NewProjectInterview() {
             rows={3}
           />
           <Button type="submit" disabled={loading || !textValue.trim()}>
+            {loading && <Spinner className="mr-1.5" />}
             Lanjut
           </Button>
         </form>
@@ -163,6 +173,7 @@ function NewProjectInterview() {
       {question.type === "boolean" && (
         <div className="flex gap-3">
           <Button disabled={loading} onClick={() => submitAnswer(true)}>
+            {loading && <Spinner className="mr-1.5" />}
             Ya
           </Button>
           <Button disabled={loading} variant="outline" onClick={() => submitAnswer(false)}>
@@ -171,14 +182,46 @@ function NewProjectInterview() {
         </div>
       )}
 
-      {question.type === "single-select" && (
+      {question.type === "single-select" && !otherMode && (
         <div className="flex flex-col gap-2">
           {question.options?.map((opt) => (
             <Button key={opt} disabled={loading} variant="outline" onClick={() => submitAnswer(opt)}>
               {opt}
             </Button>
           ))}
+          {question.allowOther && (
+            <Button variant="outline" onClick={() => setOtherMode(true)}>
+              Lainnya (isi sendiri)
+            </Button>
+          )}
         </div>
+      )}
+
+      {question.type === "single-select" && otherMode && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (textValue.trim()) submitAnswer(textValue.trim());
+          }}
+          className="space-y-3"
+        >
+          <input
+            autoFocus
+            type="text"
+            placeholder="Tulis jawabanmu…"
+            value={textValue}
+            onChange={(e) => setTextValue(e.target.value)}
+            className="w-full rounded border p-2"
+          />
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading || !textValue.trim()}>
+              Lanjut
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setOtherMode(false)}>
+              Batal
+            </Button>
+          </div>
+        </form>
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface StepSummary {
   id: string;
@@ -154,9 +155,13 @@ export default function TaskDetailPage() {
                 </a>
               </div>
             ) : (
-              <Button size="sm" variant="outline" disabled={splitting} onClick={split}>
-                {splitting ? "Memecah task…" : "Split jadi step"}
-              </Button>
+              <div className="space-y-1">
+                <Button size="sm" variant="outline" disabled={splitting} onClick={split}>
+                  {splitting && <Spinner className="mr-1.5" />}
+                  {splitting ? "Memecah task…" : "Split jadi step"}
+                </Button>
+                {splitting && <p className="text-xs text-zinc-500">Biasanya beberapa detik, jangan tutup tab.</p>}
+              </div>
             )
           ) : (
             <div>
@@ -216,7 +221,8 @@ export default function TaskDetailPage() {
         </div>
       ) : (
         <Button disabled={copyState === "loading"} onClick={copyPrompt}>
-          {copyState === "copied" ? "Tersalin ✓" : "Copy prompt"}
+          {copyState === "loading" && <Spinner className="mr-1.5" />}
+          {copyState === "loading" ? "Menyiapkan…" : copyState === "copied" ? "Tersalin ✓" : "Copy prompt"}
         </Button>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}

@@ -17,7 +17,7 @@ function validateValue(question: InterviewQuestion, value: string | boolean): st
   if (typeof value !== "string" || value.trim().length === 0) {
     return "expected non-empty string value";
   }
-  if (question.type === "single-select" && !question.options?.includes(value)) {
+  if (question.type === "single-select" && !question.allowOther && !question.options?.includes(value)) {
     return `value must be one of: ${question.options?.join(", ")}`;
   }
   return null;

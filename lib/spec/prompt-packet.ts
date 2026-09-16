@@ -58,7 +58,15 @@ async function assemble(taskId: string): Promise<AssembledPacket> {
     orderBy: { createdAt: "desc" },
   });
 
+  // Catalog lookup covers the 3 curated blueprints; a user-chosen custom stack (no
+  // blueprintId match) falls back to ADR-001's own text, which always holds the real choice.
   const blueprint = BLUEPRINT_CATALOG.find((b) => b.id === project.blueprintId);
+  const [adr1, adr2] = await Promise.all([
+    prisma.decision.findFirst({ where: { projectId: project.id, refId: "ADR-001" }, select: { choice: true } }),
+    prisma.decision.findFirst({ where: { projectId: project.id, refId: "ADR-002" }, select: { choice: true } }),
+  ]);
+  const stackSummary = blueprint?.summary ?? adr1?.choice;
+  const designDirection = adr2?.choice;
   const nonGoals = ((project.brief?.nonGoals as string[]) ?? []).slice(0, 5);
   const confirmedAssumptions = await getConfirmedAssumptions(taskId);
 
@@ -84,7 +92,10 @@ async function assemble(taskId: string): Promise<AssembledPacket> {
     lines.push(prose.intent);
     lines.push("");
     lines.push("### Konteks");
-    lines.push(`Stack: ${blueprint?.summary ?? "(belum ditentukan)"}`);
+    lines.push(`Stack: ${stackSummary ?? "(belum ditentukan)"}`);
+    if (designDirection) {
+      lines.push(`Gaya visual: ${designDirection}`);
+    }
     if (fileTreeLines.length) {
       lines.push("Sudah ada di proyek:");
       lines.push(...fileTreeLines.map((f) => `- ${f}`));

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type Assumption = {
   refId: string;
@@ -39,6 +40,7 @@ function fromLines(text: string) {
 
 export default function BriefPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
 
   const [data, setData] = useState<BriefResponse | null>(null);
   const [problem, setProblem] = useState("");
@@ -46,6 +48,7 @@ export default function BriefPage() {
   const [scopeText, setScopeText] = useState("");
   const [nonGoalsText, setNonGoalsText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
 
@@ -108,16 +111,16 @@ export default function BriefPage() {
   }
 
   async function approve() {
-    setLoading(true);
+    setApproving(true);
     setError(null);
     const res = await fetch(`/api/projects/${id}/brief/approve`, { method: "POST" });
-    setLoading(false);
     if (!res.ok) {
+      setApproving(false);
       const body = await res.json();
       setError(typeof body.error === "string" ? body.error : "Gagal approve brief");
       return;
     }
-    await load();
+    router.push(`/projects/${id}`);
   }
 
   return (
@@ -171,6 +174,7 @@ export default function BriefPage() {
 
         {!isLocked && (
           <Button variant="outline" disabled={loading} onClick={saveChanges}>
+            {loading && <Spinner className="mr-1.5" />}
             Simpan perubahan
           </Button>
         )}
@@ -207,9 +211,15 @@ export default function BriefPage() {
           </Link>
         </div>
       ) : (
-        <Button disabled={loading || isLocked} onClick={approve}>
-          Approve &amp; mulai compile spec
-        </Button>
+        <div className="space-y-1">
+          <Button disabled={approving || isLocked} onClick={approve}>
+            {approving && <Spinner className="mr-1.5" />}
+            {approving ? "Memulai compile…" : "Approve & mulai compile spec"}
+          </Button>
+          {approving && (
+            <p className="text-xs text-zinc-500">Biasanya beberapa menit, jangan tutup tab.</p>
+          )}
+        </div>
       )}
     </div>
   );

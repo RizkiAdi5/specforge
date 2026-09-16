@@ -4,6 +4,7 @@ import type { ActionType, ModelAlias } from "../lib/generated/prisma/enums";
 
 const CREDIT_RULES: Record<ActionType, { creditCost: number; model: ModelAlias }> = {
   INTERVIEW: { creditCost: 0, model: "FLASH" },
+  COMPILE_BRIEF: { creditCost: 0, model: "FLASH" },
   COMPILE_SPEC: { creditCost: 10, model: "FLASH" },
   COMPILE_DOMAIN: { creditCost: 0, model: "FLASH" },
   COMPILE_STORIES: { creditCost: 0, model: "FLASH" },
@@ -15,6 +16,7 @@ const CREDIT_RULES: Record<ActionType, { creditCost: number; model: ModelAlias }
   PASTE_BACK: { creditCost: 0, model: "FLASH" },
   REFINE_SECTION: { creditCost: 1, model: "FLASH" },
   CHANGE_REQUEST: { creditCost: 3, model: "FLASH_THINKING" },
+  REGENERATE_ARTIFACT: { creditCost: 0, model: "FLASH" },
 };
 
 async function main() {

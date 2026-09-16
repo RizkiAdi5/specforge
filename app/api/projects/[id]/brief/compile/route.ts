@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { inngest } from "@/lib/inngest/client";
 import { getInterviewState } from "@/lib/interview/next-for-project";
 import { requireOrgId, UnauthorizedError } from "@/lib/auth/current-org";
@@ -26,12 +25,6 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
   if (!state.result.done) {
     return NextResponse.json({ error: "interview not finished yet" }, { status: 409 });
-  }
-
-  const org = await prisma.org.findUniqueOrThrow({ where: { id: orgId } });
-  const rule = await prisma.creditRule.findUniqueOrThrow({ where: { actionType: "COMPILE_SPEC" } });
-  if (org.creditBalance < rule.creditCost) {
-    return NextResponse.json({ error: "insufficient credit" }, { status: 402 });
   }
 
   await inngest.send({ name: "project/brief-compile.requested", data: { projectId: id } });

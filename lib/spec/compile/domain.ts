@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { run } from "@/lib/ai/run";
 import { allocateRefIds } from "@/lib/spec/ref-counter";
+import { assertEntityLimit } from "@/lib/spec/project-limits";
 
 const entitySchema = z.object({
   name: z.string().min(1),
@@ -76,6 +77,8 @@ export async function compileDomain(opts: { orgId: string; projectId: string; br
     system: SYSTEM_PROMPT,
     user: `Problem: ${opts.brief.problem}\nTarget user: ${opts.brief.targetUser}\nScope:\n${JSON.stringify(opts.brief.scope, null, 2)}\nNon-goals:\n${JSON.stringify(opts.brief.nonGoals, null, 2)}`,
   });
+
+  await assertEntityLimit(opts.projectId, output.entities.length);
 
   const refIds = await allocateRefIds(opts.projectId, "E", output.entities.length);
   const nameToRefId = new Map(output.entities.map((e, i) => [e.name, refIds[i]]));

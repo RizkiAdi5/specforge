@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 type Assumption = {
@@ -199,9 +200,12 @@ export default function BriefPage() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {isApproved ? (
-        <p className="text-sm font-medium text-green-700">
-          Brief sudah di-approve. Compile spec sedang berjalan.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-green-700">Brief sudah di-approve. Compile spec sedang berjalan.</p>
+          <Link href={`/projects/${id}`} className="text-sm underline">
+            Lihat progres compile →
+          </Link>
+        </div>
       ) : (
         <Button disabled={loading || isLocked} onClick={approve}>
           Approve &amp; mulai compile spec

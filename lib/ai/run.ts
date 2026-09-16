@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import type { ActionType, ModelAlias } from "@/lib/generated/prisma/enums";
 import { DeepSeekProvider, MODEL_MAP, estimateCostUsd } from "./provider";
 import { selectKey } from "./select-key";
+import { assertRateLimit, assertCostCap } from "./limits";
 
 export class InsufficientCreditError extends Error {
   constructor(orgId: string, action: ActionType) {
@@ -52,10 +53,14 @@ export async function run<T>(opts: {
   const org = await prisma.org.findUniqueOrThrow({ where: { id: orgId } });
   const rule = await prisma.creditRule.findUniqueOrThrow({ where: { actionType: action } });
   const { apiKey, usingByok } = await selectKey(orgId);
-  const creditCost = usingByok ? 0 : rule.creditCost;
+  const creditCost = usingByok || org.isUnlimited ? 0 : rule.creditCost;
 
   if (creditCost > org.creditBalance) {
     throw new InsufficientCreditError(orgId, action);
+  }
+  if (creditCost > 0 && !org.isUnlimited) {
+    await assertRateLimit(orgId);
+    await assertCostCap(orgId);
   }
 
   const modelAlias = opts.model ?? rule.model;

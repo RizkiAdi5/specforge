@@ -7,6 +7,29 @@ const bodySchema = z.object({
   archetype: z.enum(["SAAS_CRUD"]),
 });
 
+export async function GET() {
+  let orgId: string;
+  try {
+    orgId = await requireOrgId();
+  } catch (err) {
+    if (err instanceof UnauthorizedError) {
+      return NextResponse.json({ error: err.message }, { status: 401 });
+    }
+    throw err;
+  }
+
+  const [org, projects] = await Promise.all([
+    prisma.org.findUniqueOrThrow({ where: { id: orgId } }),
+    prisma.project.findMany({
+      where: { orgId, status: { not: "ARCHIVED" } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, archetype: true, status: true, createdAt: true },
+    }),
+  ]);
+
+  return NextResponse.json({ projects, projectSlotMax: org.projectSlotMax });
+}
+
 export async function POST(req: Request) {
   let orgId: string;
   try {

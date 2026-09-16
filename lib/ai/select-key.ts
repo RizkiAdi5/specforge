@@ -1,19 +1,18 @@
 import { prisma } from "@/lib/db";
+import { decryptSecret } from "@/lib/crypto/envelope";
 
 export interface SelectedKey {
   apiKey: string;
   usingByok: boolean;
 }
 
-// ponytail: BYOK selalu jatuh ke platform key sampai T-024 (envelope encryption) ada.
-// ProviderKey.encryptedKey belum bisa didekripsi tanpa itu.
 export async function selectKey(orgId: string): Promise<SelectedKey> {
   const byok = await prisma.providerKey.findUnique({
     where: { orgId_provider: { orgId, provider: "deepseek" } },
   });
 
   if (byok?.isValid) {
-    throw new Error("BYOK belum didukung — implementasikan dekripsi di T-024");
+    return { apiKey: decryptSecret(byok.encryptedKey), usingByok: true };
   }
 
   const apiKey = process.env.DEEPSEEK_API_KEY;

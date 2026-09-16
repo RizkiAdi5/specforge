@@ -47,7 +47,7 @@ export const compileBriefJob = inngest.createFunction(
       run({
         orgId: project.orgId,
         projectId: project.id,
-        action: "COMPILE_SPEC",
+        action: "COMPILE_BRIEF",
         schema: compileBriefSchema,
         system: SYSTEM_PROMPT,
         user: `Arketipe: ${project.archetype}\n\nJawaban wawancara (JSON):\n${JSON.stringify(rawAnswers, null, 2)}`,
